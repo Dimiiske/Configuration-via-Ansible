@@ -1,0 +1,20 @@
+{
+  "service": {
+    "name": "hotel",
+    "port": 8082,
+    "connect": {
+      "sidecar_service": {
+        "proxy": {
+          "upstreams":
+            [
+              {
+                "destination_name": "database",
+                "local_bind_port": 5432
+              }
+            ]
+        }
+      }
+    }
+  }
+}
+  

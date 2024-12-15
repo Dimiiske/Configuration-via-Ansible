@@ -1,0 +1,5 @@
+- hosts: consul
+  become: true
+  gather_facts: true
+  roles:
+    - install_consul_server

@@ -1,0 +1,96 @@
+---
+- name: Copy consul server
+  copy:
+    src: consul_1.20.1_linux_amd64.zip
+    dest: /tmp/consul_1.20.1_linux_amd64.zip
+
+- name: Unzip consul
+  unarchive:
+    src: "/tmp/consul_1.20.1_linux_amd64.zip"
+    dest: "/usr/bin/"
+    remote_src: yes
+
+- name: Create consul data directory
+  file:
+    path: /opt/consul
+    state: directory
+
+- name: Create dir config
+  ansible.builtin.file:
+    path: /etc/consul.d
+    state: directory
+
+- name: Copy consul db configuration
+  template:
+    src: consul_client.hcl.j2
+    dest: /etc/consul.d/consul.hcl
+    mode: '0644'
+  when: "'db' in group_names"
+
+- name: Copy consul api configuration
+  template:
+    src: consul_client2.hcl.j2
+    dest: /etc/consul.d/consul.hcl
+    mode: '0644'
+  when: "'api' in group_names"
+
+- name: Copy systemd service
+  template:
+    src: consul_client.service
+    dest: /etc/systemd/system
+
+- name: restart systemd service
+  ansible.builtin.systemd:
+    state: restarted
+    daemon_reload: true
+    name: "consul_client.service"
+
+- name: Create dir config
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+
+- name: Install Envoy
+  shell: |
+    curl https://apt.envoyproxy.io/signing.key | sudo gpg --yes --dearmor -o /etc/apt/keyrings/envoy-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/envoy-keyring.gpg] https://apt.envoyproxy.io jammy main" | sudo tee /etc/apt/sources.list.d/envoy.list
+    sudo apt-get update
+    sudo apt-get install envoy
+
+- name: Copy consul db envoy json
+  template:
+    src: postgres.json.j2
+    dest: /etc/consul.d/postgres.json
+    mode: '0644'
+  when: "'db' in group_names"
+
+- name: Register database
+  environment:
+    CONSUL_HTTP_ADDR: "{{ consul_http_addr }}"
+  command: consul services register /etc/consul.d/postgres.json
+  when: "'db' in group_names"
+
+- name: Connect database
+  environment:
+    CONSUL_HTTP_ADDR: "{{ consul_http_addr }}"
+  shell: nohup consul connect envoy -ignore-envoy-compatibility=true -sidecar-for database &
+  when: "'db' in group_names"
+
+- name: Copy consul api envoy json
+  template:
+    src: hotel.json.j2
+    dest: /etc/consul.d/hotel.json
+    mode: '0644'
+  when: "'api' in group_names"
+
+- name: Register api
+  environment:
+    CONSUL_HTTP_ADDR: "{{ consul_http_addr }}"
+  command: consul services register /etc/consul.d/hotel.json
+  when: "'api' in group_names"
+
+- name: Connect api
+  environment:
+    CONSUL_HTTP_ADDR: "{{ consul_http_addr }}"
+  shell: nohup consul connect envoy -ignore-envoy-compatibility=true -sidecar-for hotel &
+  when: "'api' in group_names"

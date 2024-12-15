@@ -1,0 +1,5 @@
+- hosts: db, api
+  become: true
+  gather_facts: true
+  roles:
+    - install_consul_client

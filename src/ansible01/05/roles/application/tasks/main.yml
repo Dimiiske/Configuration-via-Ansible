@@ -1,0 +1,28 @@
+---
+- name: Create dir
+  ansible.builtin.file:
+    path: /opt/services
+    state: directory
+
+- name: Log into DockerHub
+  community.docker.docker_login:
+    username: "{{ login }}"
+    password: "{{ token }}"
+
+- name: Copy env
+  ansible.builtin.template:
+    src: default.env.j2
+    dest: /opt/services/default.env
+    mode: '0644'
+
+- name: Copy docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/services/docker-compose.yml
+
+- name: deploy docker
+  shell: docker compose -f /opt/services/docker-compose.yml up -d
+
+- name: Log out of DockerHub
+  docker_login:
+    state: absent

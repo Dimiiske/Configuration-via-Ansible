@@ -1,0 +1,8 @@
+---
+- name: Copy docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/postgres/docker-compose.yml
+
+- name: deploy docker
+  shell: docker compose -f /opt/postgres/docker-compose.yml up -d

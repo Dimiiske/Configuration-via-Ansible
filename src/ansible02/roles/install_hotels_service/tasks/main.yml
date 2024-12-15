@@ -1,0 +1,27 @@
+---
+- name: Install OpenJDK 8
+  apt:
+    name: openjdk-8-jdk
+    state: present
+  become: true
+
+- name: Copy hotel-service source code
+  copy:
+    src: hotel-service/
+    dest: /opt
+  
+- name: Create package
+  shell: | 
+    mvn dependency:go-offline
+    mvn -B package -DskipTests
+  args:
+    chdir: /opt
+
+- name: Run hotel-service JAR
+  shell: |
+    export POSTGRES_HOST={{ postgres_host }}
+    export POSTGRES_PORT={{ postgres_port }}
+    export POSTGRES_DB={{ postgres_db }}
+    export POSTGRES_USER={{ postgres_user }}
+    export POSTGRES_PASSWORD={{ postgres_password }}
+    nohup java -jar /opt/target/hotel-service-0.0.1-SNAPSHOT.jar > /dev/null 2>&1 &

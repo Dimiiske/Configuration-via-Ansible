@@ -1,0 +1,47 @@
+---
+- name: Install Consul dependencies
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - unzip
+    - curl
+
+- name: Copy consul server archive
+  copy:
+    src: consul_1.20.1_linux_amd64.zip
+    dest: /tmp/consul_1.20.1_linux_amd64.zip
+
+- name: Unzip Consul
+  unarchive:
+    src: "/tmp/consul_1.20.1_linux_amd64.zip"
+    dest: "/usr/bin/"
+    remote_src: yes
+
+- name: Create Consul data directory
+  file:
+    path: /opt/consul
+    state: directory
+
+- name: Create dir config
+  ansible.builtin.file:
+    path: /etc/consul.d
+    state: directory
+
+- name: Copy consul server configuration
+  template:
+    src: consul_server.hcl.j2
+    dest: /etc/consul.d/consul.hcl
+    mode: '0644'
+
+- name: Copy systemd service
+  template:
+    src: consul_server.service
+    dest: /etc/systemd/system
+    mode: '0644'
+
+- name: Restart systemd service
+  ansible.builtin.systemd:
+    state: restarted
+    daemon_reload: true
+    name: "consul_server.service"

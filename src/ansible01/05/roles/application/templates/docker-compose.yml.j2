@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3.10-management
+    restart: always
+    networks:
+      - default-network
+
+  database:
+    container_name: database
+    image: dimiiske/database-service:v0.1
+    env_file:
+      - ./default.env
+    restart: always
+    depends_on:
+      - rabbitmq
+    networks:
+      - default-network
+
+  booking-service:
+    container_name: booking-service
+    image: dimiiske/booking-service:v0.2
+    env_file:
+      - ./default.env
+    environment:
+      - POSTGRES_DB=reservations_db
+    depends_on:
+      - database
+    networks:
+      - default-network
+
+  gateway-service:
+    container_name: gateway-service
+    image: dimiiske/gateway-service:v0.1
+    env_file:
+      - ./default.env
+    ports:
+      - 8087:8087
+    depends_on:
+      - database
+    networks:
+      - default-network
+
+  hotel-service:
+    container_name: hotel-service
+    image: dimiiske/hotel-service:v0.1
+    env_file:
+      - ./default.env
+    environment:
+      - POSTGRES_DB=hotels_db
+    depends_on:
+      - database
+    networks:
+      - default-network
+
+  loyalty-service:
+    container_name: loyalty-service
+    image: dimiiske/loyalty-service:v0.1
+    env_file:
+      - ./default.env
+    environment:
+      - POSTGRES_DB=balances_db
+    depends_on:
+      - database
+    networks:
+      - default-network
+
+  payment-service:
+    container_name: payment-service
+    image: dimiiske/payment-service:v0.1
+    env_file:
+      - ./default.env
+    environment:
+      - POSTGRES_DB=payments_db
+    depends_on:
+      - database
+    networks:
+      - default-network
+
+  report-service:
+    container_name: report-service
+    image: dimiiske/report-service:v0.1
+    env_file:
+      - ./default.env
+    environment:
+      - POSTGRES_DB=statistics_db
+    depends_on:
+      - database
+    networks:
+      - default-network
+
+  session-service:
+    container_name: session-service
+    image: dimiiske/session-service:v0.1
+    env_file:
+      - ./default.env
+    environment:
+      - POSTGRES_DB=users_db
+    ports:
+      - 8081:8081
+    depends_on:
+      - database
+    networks:
+      - default-network
+
+networks:
+  default-network:

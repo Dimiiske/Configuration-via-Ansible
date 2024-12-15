@@ -1,0 +1,14 @@
+- hosts: all
+  become: yes
+  pre_tasks:
+  - name: Install dependencies for https support in apt
+    apt:
+      name:
+        - apt-transport-https
+        - ca-certificates
+        - software-properties-common
+        - curl
+      state: present
+      update_cache: 'yes'
+  roles:
+    - docker-install 

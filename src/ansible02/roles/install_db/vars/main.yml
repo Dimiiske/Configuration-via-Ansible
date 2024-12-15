@@ -1,0 +1,4 @@
+---
+postgres_db: "hotels_db"
+postgres_user: "dimiiske"
+postgres_password: "1234"
